@@ -4,6 +4,7 @@ use crate::DateTime;
 use std::convert::From;
 use weekday::*;
 
+#[derive(PartialOrd, Ord, Eq, PartialEq)]
 pub struct CivilDateTime {
     pub(crate) year: u16,
     pub(crate) month: u8,
@@ -65,5 +66,15 @@ mod tests {
         let dttm = CivilDateTime::new(2020, 10, 11, 12, 28, 20);
         assert_eq!(dttm.wday(), crate::civil::weekday::Weekday::Sun); // 1602419300
         assert_eq!(dttm.yday(), 285); // 1602419300
+    }
+
+    #[test]
+    fn test_comparison() {
+        let dttm1 = CivilDateTime::new(2020, 10, 11, 12, 28, 20);
+        let dttm2 = CivilDateTime::new(2020, 10, 12, 01, 01, 01);
+        let dttm3 = CivilDateTime::new(2020, 09, 11, 23, 59, 59);
+        assert!(dttm2 > dttm1);
+        assert!(dttm3 < dttm1);
+        assert!(dttm1 == dttm1);
     }
 }
