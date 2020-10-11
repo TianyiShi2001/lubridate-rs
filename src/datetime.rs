@@ -1,6 +1,9 @@
+pub use crate::civil::weekday::*;
+use crate::civil::CivilDateTime;
 use crate::constants::*;
 use crate::constants::{D30, MDAYS, SECONDS_IN_ONE_YEAR};
 use crate::utils::{adjust_leap_years, check_mdays, is_leap_year};
+use std::convert::From;
 
 pub struct DateTime {
     // pub year: u16,
@@ -35,28 +38,7 @@ impl DateTime {
     }
 
     pub fn from_ymd_hms(year: u16, month: u8, day: u8, hour: u8, minute: u8, second: u8) -> Self {
-        let mut secs: u32 = 0;
-        let is_leap = is_leap_year(year);
-        assert!(0 < month && month <= 12, "month must be between 1 and 12!");
-        // let mdays = MDAYS[month as usize];
-        assert!(
-            check_mdays(month, day, is_leap),
-            "The month does not contain that many days!"
-        );
-        assert!(hour < 24, "hour must be between 0 and 23!");
-        assert!(minute < 60, "minute must be between 0 and 60!");
-        assert!(second < 60, "second must be between 0 and 60!"); // TODO: allow leap secs?
-        secs += second as u32;
-        secs += minute as u32 * 60;
-        secs += hour as u32 * 3600;
-        secs += (day - 1) as u32 * DAYLEN;
-        secs += SM[month as usize];
-        secs += D30;
-        let y: i64 = year as i64 - 2000;
-        secs = (secs as i64
-            + YEARLEN as i64 * y
-            + adjust_leap_years(y, month as i64, is_leap_year(year))) as u32;
-        Self { secs, nanos: 0 }
+        CivilDateTime::new(year, month, day, hour, minute, second).into()
     }
     pub fn from_ymd_hm(year: u16, month: u8, day: u8, hour: u8, minute: u8) -> Self {
         Self::from_ymd_hms(year, month, day, hour, minute, 0)
@@ -81,7 +63,31 @@ pub struct Date {
     pub day: u8,
 }
 
-use std::convert::From;
+impl From<CivilDateTime> for DateTime {
+    fn from(dttm: CivilDateTime) -> Self {
+        let CivilDateTime {
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+        } = dttm;
+        let mut secs: u32 = 0;
+        secs += second as u32;
+        secs += minute as u32 * 60;
+        secs += hour as u32 * 3600;
+        secs += (day - 1) as u32 * DAYLEN;
+        secs += SM[month as usize];
+        secs += D30;
+        let y: i64 = year as i64 - 2000;
+        secs = (secs as i64
+            + YEARLEN as i64 * y
+            + adjust_leap_years(y, month as i64, is_leap_year(year))) as u32;
+        Self { secs, nanos: 0 }
+    }
+}
+
 impl From<chrono::DateTime<chrono::Utc>> for DateTime {
     fn from(dttm: chrono::DateTime<chrono::Utc>) -> Self {
         Self::from_timestamp(dttm.timestamp() as u32)
